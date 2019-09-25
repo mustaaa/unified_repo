@@ -11,7 +11,8 @@ add and commit all the files to the repository
 
 ## Do git add submodule 
 
-To add sfml run `git submodule add https://github.com/SFML/SFML.git ./3rdParty`
+To add SFML libs to the project run `git submodule add https://github.com/SFML/SFML.git ./3rdParty/SFML`
+after cloning is complete commit the current changes in the repository
 
 ## Build and run the project normally
 
