@@ -4,8 +4,11 @@
 #include <utility>
 #include "CellularAutomata.h"
 
-const std::size_t gGridWidth = 800 / 10;
-const std::size_t gGridHeight = 600 / 10;
+const std::size_t screenWidthInPx = 400;
+const std::size_t screenHeigthInPx = 400;
+const std::size_t cellSizeInPx = 10;
+const std::size_t gGridWidth = screenWidthInPx / cellSizeInPx;
+const std::size_t gGridHeight = screenHeigthInPx / cellSizeInPx;
 
 struct CCell
 {
@@ -18,13 +21,13 @@ CGrid<CCell, gGridHeight, gGridWidth> gNextGrid;
 
 std::pair<int, int> getGridPos(const sf::Vector2i &pos)
 {
-    return std::make_pair(pos.x / 10, pos.y / 10);
+    return std::make_pair(pos.x / cellSizeInPx, pos.y / cellSizeInPx);
 }
 
 int main()
 {
     // Create the main window
-    sf::RenderWindow window(sf::VideoMode(800, 600), "SFML window");
+    sf::RenderWindow window(sf::VideoMode(screenWidthInPx, screenHeigthInPx), "SFML window");
 
     sf::Clock clock; // starts the clock
     auto sizeInPixel = window.getSize();
@@ -37,8 +40,8 @@ int main()
     {
         for (int j = 0; j < gGrid[i].size(); j++)
         {
-            gGrid[i][j].mShape.setSize({10, 10});
-            gGrid[i][j].mShape.setPosition({i * 10, j * 10});
+            gGrid[i][j].mShape.setSize({ static_cast<float>(cellSizeInPx),static_cast<float>(cellSizeInPx)});
+            gGrid[i][j].mShape.setPosition({static_cast<float>(i)*10, static_cast<float>(j)*10});
             gGrid[i][j].mShape.setOutlineColor(sf::Color::Green);
             gGrid[i][j].mShape.setOutlineThickness(1.0);
             gGrid[i][j].mShape.setFillColor(sf::Color::White);
@@ -51,6 +54,9 @@ int main()
     }
     gNextGrid = gGrid;
 
+	auto curGrid = &gGrid;
+	auto nextGrid = &gNextGrid;
+
     bool leftMouseIsPressed = false;
     bool rightMouseIsPressed = false;
     
@@ -58,7 +64,6 @@ int main()
     // Start the game loop
     while (window.isOpen())
     {
-
         auto mousePos = sf::Mouse::getPosition(window);
         sf::Vector2i localPosition = sf::Mouse::getPosition(window);
         auto gridPos = getGridPos(localPosition);
@@ -71,70 +76,65 @@ int main()
             if (event.type == sf::Event::Closed)
                 window.close();
 
-            if (gridPos.first < gGridWidth && gridPos.second < gGridHeight && gridPos.first >= 0 && gridPos.second >= 0)
+            if (event.type == sf::Event::MouseButtonPressed)
             {
-
-                if (event.type == sf::Event::MouseButtonPressed)
+                if (event.mouseButton.button == sf::Mouse::Left)
                 {
-                    if (event.mouseButton.button == sf::Mouse::Left)
-                    {
-                        leftMouseIsPressed = true;
-                    }
-                    if (event.mouseButton.button == sf::Mouse::Right)
-                    {
-                        rightMouseIsPressed = true;
-                    }
+                    leftMouseIsPressed = true;
                 }
-
-                if (event.type == sf::Event::MouseButtonReleased)
+                if (event.mouseButton.button == sf::Mouse::Right)
                 {
-                    if (event.mouseButton.button == sf::Mouse::Left)
-                    {
-                        leftMouseIsPressed = false;
-                    }
-                    if (event.mouseButton.button == sf::Mouse::Right)
-                    {
-                        rightMouseIsPressed = false;
-                    }
+                    rightMouseIsPressed = true;
                 }
+            }
 
-
-            
+            if (event.type == sf::Event::MouseButtonReleased)
+            {
+                if (event.mouseButton.button == sf::Mouse::Left)
+                {
+                    leftMouseIsPressed = false;
+                }
+                if (event.mouseButton.button == sf::Mouse::Right)
+                {
+                    rightMouseIsPressed = false;
+                }
             }
         }
 
-        if (leftMouseIsPressed)
-        {
-            gGrid[gridPos.first][gridPos.second].mState = 1;
-            gGrid[gridPos.first][gridPos.second].mShape.setFillColor(sf::Color::Black);
-        }
-        if (rightMouseIsPressed)
-        {
-            gGrid[gridPos.first][gridPos.second].mState = 0;
-            gGrid[gridPos.first][gridPos.second].mShape.setFillColor(sf::Color::White);
-        }
-
+		if (gridPos.first < gGridWidth && gridPos.second < gGridHeight && gridPos.first >= 0 && gridPos.second >= 0)
+		{
+			if (leftMouseIsPressed)
+			{
+				(*curGrid)[gridPos.first][gridPos.second].mState = 1;
+				(*curGrid)[gridPos.first][gridPos.second].mShape.setFillColor(sf::Color::Black);
+			}
+			if (rightMouseIsPressed)
+			{
+				(*curGrid)[gridPos.first][gridPos.second].mState = 0;
+				(*curGrid)[gridPos.first][gridPos.second].mShape.setFillColor(sf::Color::White);
+			}
+		}
         // Clear screen
         window.clear();
         // Draw the rects
-        for (int i = 0; i < gGrid.size(); i++)
+        for (int i = 0; i < (*curGrid).size(); i++)
         {
-            for (int j = 0; j < gGrid[i].size(); j++)
+            for (int j = 0; j < (*curGrid)[i].size(); j++)
             {
-                window.draw(gGrid[i][j].mShape);
+                window.draw((*curGrid)[i][j].mShape);
             }
         }
 
         sf::Time elapsed1 = clock.getElapsedTime();
-        if (elapsed1.asMilliseconds() > 120 && !leftMouseIsPressed && !rightMouseIsPressed)
+        if (elapsed1.asMilliseconds() > 60 && !leftMouseIsPressed && !rightMouseIsPressed)
         {
             clock.restart();
 
-            for (int i = 0; i < gGrid.size(); i++)
+            for (int i = 0; i < (*curGrid).size(); i++)
             {
-                for (int j = 0; j < gGrid[i].size(); j++)
+                for (int j = 0; j < (*curGrid)[i].size(); j++)
                 {
-                    auto neighbors = getNeighbors(gGrid, i, j);
+                    auto neighbors = getNeighbors((*curGrid), i, j);
                     //std::cout << "getNeighbors returned for " << i << "," << j << " is:" << neighbors.size() << " neighbors\n";
                     int aliveNeighborCount = 0;
                     for (const auto &e : neighbors)
@@ -142,24 +142,24 @@ int main()
                         if (e.mState == 1)
                             aliveNeighborCount++;
                     }
-                    if (gGrid[i][j].mState && (aliveNeighborCount < 2 || aliveNeighborCount > 3))
+                    if ((*curGrid)[i][j].mState && (aliveNeighborCount < 2 || aliveNeighborCount > 3))
                     {
-                        gNextGrid[i][j].mState = 0;
-                        gNextGrid[i][j].mShape.setFillColor(sf::Color::White);
+                        (*nextGrid)[i][j].mState = 0;
+                        (*nextGrid)[i][j].mShape.setFillColor(sf::Color::White);
                     }
-                    else if ((gGrid[i][j].mState == 0) && aliveNeighborCount == 3)
+                    else if (((*curGrid)[i][j].mState == 0) && aliveNeighborCount == 3)
                     {
-                        gNextGrid[i][j].mState = 1;
-                        gNextGrid[i][j].mShape.setFillColor(sf::Color::Black);
+                        (*nextGrid)[i][j].mState = 1;
+                        (*nextGrid)[i][j].mShape.setFillColor(sf::Color::Black);
                     }
                     else
                     {
-                        gNextGrid[i][j].mState = gGrid[i][j].mState;
-                        gNextGrid[i][j].mShape.setFillColor(gGrid[i][j].mState ? sf::Color::Black : sf::Color::White);
+                        (*nextGrid)[i][j].mState = (*curGrid)[i][j].mState;
+                        (*nextGrid)[i][j].mShape.setFillColor((*curGrid)[i][j].mState ? sf::Color::Black : sf::Color::White);
                     }
                 }
             }
-            gGrid = gNextGrid;
+			std::swap(curGrid, nextGrid);
         }
 
         // Update the window
