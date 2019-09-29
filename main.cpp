@@ -8,6 +8,7 @@ float mapTo(int inBegin, int inEnd, int x, float outBegin, float outEnd)
 {
     float out; 
     out = outBegin + (outEnd - outBegin) * (static_cast<float>(x) / static_cast<float>(inEnd - inBegin)); 
+	return out;
 }
 
 int checkConvergence(const sf::Vector2f& point)
